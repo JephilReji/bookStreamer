@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { auth, provider, db } from './firebase';
 import { signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
-import { collection, addDoc, query, where, onSnapshot } from 'firebase/firestore'; // Removed orderBy from here
+import { collection, addDoc, query, where, onSnapshot } from 'firebase/firestore'; 
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import './App.css';
@@ -13,34 +12,42 @@ function App() {
   const [user, setUser] = useState(null);
   const [books, setBooks] = useState([]);
   
-  // New States
-  const [authLoading, setAuthLoading] = useState(true); // Checks if user is logged in
-  const [loading, setLoading] = useState(false); // For AI button
+  // State
+  const [authLoading, setAuthLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  
+  // Dark Mode State (Persistence)
+  const [darkMode, setDarkMode] = useState(() => {
+    return localStorage.getItem('theme') === 'dark';
+  });
 
   const [formData, setFormData] = useState({
     title: '', author: '', startDate: '', endDate: '', summary: '', coverUrl: '' 
   });
 
+  // Toggle Theme
+  const toggleTheme = () => {
+    setDarkMode(prev => {
+      const newMode = !prev;
+      localStorage.setItem('theme', newMode ? 'dark' : 'light');
+      return newMode;
+    });
+  };
+
   useEffect(() => {
-    // Check if user is logged in when app starts
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
-      setAuthLoading(false); // Stop loading once we know
+      setAuthLoading(false); 
       if (currentUser) fetchBooks(currentUser.uid);
     });
     return () => unsubscribe();
   }, []);
 
   const fetchBooks = (uid) => {
-    // SIMPLIFIED QUERY: Just get books for this user. We sort them in Javascript below.
     const q = query(collection(db, "books"), where("uid", "==", uid));
-    
     onSnapshot(q, (snapshot) => {
       const booksData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      
-      // Sort by Start Date (Newest first) in Javascript to avoid DB Index errors
       booksData.sort((a, b) => new Date(b.startDate) - new Date(a.startDate));
-      
       setBooks(booksData);
     });
   };
@@ -72,28 +79,37 @@ function App() {
     setFormData({ title: '', author: '', startDate: '', endDate: '', summary: '', coverUrl: '' });
   };
 
-  // 1. LOADING SCREEN (Fixes the "disappearing" issue)
   if (authLoading) {
     return <div className="loading-screen">Starting BookStreamer...</div>;
   }
 
   return (
-    <div className="app-container">
+    <div className="app-container" data-theme={darkMode ? 'dark' : 'light'}>
       <nav className="navbar">
-        <h1 className="logo">BookStreamer</h1>
-        {user ? (
-          <div className="user-menu">
-            <span className="user-name">Hi, {user.displayName.split(' ')[0]}</span>
-            <button onClick={() => signOut(auth)} className="btn-logout">Logout</button>
-          </div>
-        ) : (
-          <button onClick={() => signInWithPopup(auth, provider)} className="btn-login">Login with Google</button>
-        )}
+        {/* UPDATED: Elegant, Cursive, Split Colors */}
+        <h1 className="logo">
+          <span className="logo-book">Book</span>
+          <span className="logo-streamer">Streamer</span>
+        </h1>
+        
+        <div className="nav-actions">
+          <button onClick={toggleTheme} className="btn-icon" aria-label="Toggle Dark Mode">
+            {darkMode ? '🌙' : '☀️'}
+          </button>
+
+          {user ? (
+            <div className="user-menu">
+              <span className="user-name">Hi, {user.displayName.split(' ')[0]}</span>
+              <button onClick={() => signOut(auth)} className="btn-logout">Logout</button>
+            </div>
+          ) : (
+            <button onClick={() => signInWithPopup(auth, provider)} className="btn-login">Login</button>
+          )}
+        </div>
       </nav>
 
       {user ? (
         <main className="main-content">
-          {/* Input Card */}
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="input-card">
             <div className="input-grid">
               <div className="text-inputs">
@@ -110,7 +126,8 @@ function App() {
                 
                 <div className="action-buttons">
                   <button onClick={handleAutoFill} disabled={loading} className="btn-ai">
-                    {loading ? "✨ Dreaming..." : "✨ Auto-Fill Info"}
+                    {/* UPDATED: "Summarizing..." instead of "Dreaming..." */}
+                    {loading ? "⚙️ Summarizing..." : "✨ Auto-Fill Info"}
                   </button>
                   <button onClick={handleSubmit} className="btn-save">Save Entry</button>
                 </div>
@@ -126,7 +143,6 @@ function App() {
             </div>
           </motion.div>
 
-          {/* 2. NEW HEADING SECTION */}
           <div className="feed-section">
             <h2 className="section-title">Books Streamed</h2>
             
@@ -165,7 +181,6 @@ function App() {
           </div>
         </main>
       ) : (
-        /* Login Hero Section */
         <div className="login-hero">
           <h2>Your Personal Library, Streaming Live.</h2>
           <p>Track your reading journey with AI-powered summaries.</p>
