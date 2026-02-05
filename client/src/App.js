@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { auth, provider, db } from './firebase';
 import { signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
-import { collection, addDoc, query, where, onSnapshot } from 'firebase/firestore'; 
+// UPDATED IMPORTS: Added deleteDoc and doc
+import { collection, addDoc, deleteDoc, doc, query, where, onSnapshot } from 'firebase/firestore'; 
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import './App.css';
@@ -12,11 +13,9 @@ function App() {
   const [user, setUser] = useState(null);
   const [books, setBooks] = useState([]);
   
-  // State
   const [authLoading, setAuthLoading] = useState(true);
   const [loading, setLoading] = useState(false);
   
-  // Dark Mode State (Persistence)
   const [darkMode, setDarkMode] = useState(() => {
     return localStorage.getItem('theme') === 'dark';
   });
@@ -25,7 +24,6 @@ function App() {
     title: '', author: '', startDate: '', endDate: '', summary: '', coverUrl: '' 
   });
 
-  // Toggle Theme
   const toggleTheme = () => {
     setDarkMode(prev => {
       const newMode = !prev;
@@ -50,6 +48,18 @@ function App() {
       booksData.sort((a, b) => new Date(b.startDate) - new Date(a.startDate));
       setBooks(booksData);
     });
+  };
+
+  // NEW: Delete Handler
+  const handleDelete = async (id) => {
+    if (window.confirm("Are you sure you want to remove this book from your stream?")) {
+      try {
+        await deleteDoc(doc(db, "books", id));
+      } catch (error) {
+        console.error("Error deleting document: ", error);
+        alert("Error deleting book. Please try again.");
+      }
+    }
   };
 
   const handleAutoFill = async () => {
@@ -86,7 +96,6 @@ function App() {
   return (
     <div className="app-container" data-theme={darkMode ? 'dark' : 'light'}>
       <nav className="navbar">
-        {/* UPDATED: Elegant, Cursive, Split Colors */}
         <h1 className="logo">
           <span className="logo-book">Book</span>
           <span className="logo-streamer">Streamer</span>
@@ -126,7 +135,6 @@ function App() {
                 
                 <div className="action-buttons">
                   <button onClick={handleAutoFill} disabled={loading} className="btn-ai">
-                    {/* UPDATED: "Summarizing..." instead of "Dreaming..." */}
                     {loading ? "⚙️ Summarizing..." : "✨ Auto-Fill Info"}
                   </button>
                   <button onClick={handleSubmit} className="btn-save">Save Entry</button>
@@ -154,6 +162,7 @@ function App() {
                     layout 
                     initial={{ opacity: 0, scale: 0.95 }} 
                     animate={{ opacity: 1, scale: 1 }} 
+                    exit={{ opacity: 0, x: -20 }} // Animation for deletion
                     className="book-card"
                   >
                     <div className="card-image-section">
@@ -161,11 +170,22 @@ function App() {
                     </div>
 
                     <div className="card-content-section">
+                      {/* UPDATED HEADER: Flex container for title & delete button */}
                       <div className="card-header">
-                        <h3>{b.title}</h3>
-                        <p className="card-author">by {b.author}</p>
-                        <span className="read-date">{b.startDate} — {b.endDate}</span>
+                        <div className="header-text">
+                          <h3>{b.title}</h3>
+                          <p className="card-author">by {b.author}</p>
+                          <span className="read-date">{b.startDate} — {b.endDate}</span>
+                        </div>
+                        <button 
+                          className="btn-delete" 
+                          onClick={() => handleDelete(b.id)}
+                          title="Delete Entry"
+                        >
+                          ×
+                        </button>
                       </div>
+
                       <div className="card-summary">
                         <p>{b.summary}</p>
                       </div>

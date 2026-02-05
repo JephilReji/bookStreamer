@@ -413,3 +413,40 @@ input:focus, textarea:focus {
   cursor: pointer;
   font-weight: 600;
 }
+
+/* ... existing CSS ... */
+
+/* UPDATED: Card Header now uses Flexbox to push Delete button to right */
+.card-header {
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 0.8rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+/* Helper to keep title text grouped */
+.header-text {
+  flex: 1; /* Takes up all available space */
+}
+
+/* NEW: Delete Button Styling */
+.btn-delete {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 0 0 10px;
+  transition: color 0.2s;
+  opacity: 0.6;
+}
+
+.btn-delete:hover {
+  color: #ef4444; /* Red color on hover */
+  opacity: 1;
+}
+
+/* ... existing CSS ... */
