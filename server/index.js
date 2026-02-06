@@ -9,7 +9,7 @@ const PORT = process.env.PORT || 5000;
 
 app.use(cors({
     origin: ["http://localhost:3000", "https://bookstreamer-app.vercel.app"],
-    methods: ["POST", "GET","DELETE"],
+    methods: ["POST", "GET", "DELETE"],
     credentials: true
 }));
 app.use(express.json());
@@ -21,13 +21,12 @@ app.get('/', (req, res) => res.send('BookStreamer Server Running'));
 app.post('/api/autofill', async (req, res) => {
     try {
         const { title, author } = req.body;
-        console.log(`Fetching data for: ${title}`);
 
-        // 1. Fetch Summary (Using correct 2.5-flash model)
+        // 1. Fetch Summary (Using STABLE 1.5-flash model)
         const summaryPromise = (async () => {
             try {
-                const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-                const prompt = `Write a short, engaging summary of the book "${title}" by ${author} in exactly 80 words. Plain text only, no spoilers.`;
+                const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+                const prompt = `Write a short summary of "${title}" by ${author} in exactly 80 words. No spoilers.`;
                 const result = await model.generateContent(prompt);
                 return result.response.text();
             } catch (e) {
@@ -36,21 +35,17 @@ app.post('/api/autofill', async (req, res) => {
             }
         })();
 
-        // 2. Fetch Cover (High Res if possible)
+        // 2. Fetch Cover
         const coverPromise = (async () => {
             try {
                 const query = `intitle:${encodeURIComponent(title)}+inauthor:${encodeURIComponent(author)}`;
                 const googleRes = await axios.get(`https://www.googleapis.com/books/v1/volumes?q=${query}&maxResults=1`);
-                
                 if (googleRes.data.items?.length > 0) {
                     let img = googleRes.data.items[0].volumeInfo.imageLinks?.thumbnail;
-                    // Try to force https and get a slightly larger image if available
-                    return img ? img.replace('http:', 'https:').replace('&edge=curl', '') : null;
+                    return img ? img.replace('http:', 'https:').replace('zoom=5', 'zoom=1') : null;
                 }
                 return null;
-            } catch (e) {
-                return null; 
-            }
+            } catch (e) { return null; }
         })();
 
         const [summary, coverUrl] = await Promise.all([summaryPromise, coverPromise]);
@@ -61,5 +56,4 @@ app.post('/api/autofill', async (req, res) => {
     }
 });
 
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-module.exports = app;
+module.exports = app; // Required for Vercel
