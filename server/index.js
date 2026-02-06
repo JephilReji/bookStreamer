@@ -8,8 +8,8 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 app.use(cors({
-    origin: ["http://localhost:3000", "https://your-vercel-app.vercel.app"],
-    methods: ["POST", "GET"],
+    origin: ["http://localhost:3000", "https://bookstreamer-app.vercel.app"],
+    methods: ["POST", "GET","DELETE"],
     credentials: true
 }));
 app.use(express.json());
