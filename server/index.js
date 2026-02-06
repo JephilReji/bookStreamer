@@ -26,7 +26,7 @@ app.post('/api/autofill', async (req, res) => {
         // 1. Fetch Summary (Using correct 2.5-flash model)
         const summaryPromise = (async () => {
             try {
-                const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+                const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
                 const prompt = `Write a short, engaging summary of the book "${title}" by ${author} in exactly 80 words. Plain text only, no spoilers.`;
                 const result = await model.generateContent(prompt);
                 return result.response.text();
